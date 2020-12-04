@@ -6,6 +6,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -27,7 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class PokedexAdapter extends RecyclerView.Adapter<PokedexAdapter.PokedexViewHolder> {
+public class PokedexAdapter extends RecyclerView.Adapter<PokedexAdapter.PokedexViewHolder> implements Filterable {
+
     public static class PokedexViewHolder extends RecyclerView.ViewHolder {
         public LinearLayout containerView;
         public TextView textView;
@@ -51,6 +54,7 @@ public class PokedexAdapter extends RecyclerView.Adapter<PokedexAdapter.PokedexV
     }
     private List<Pokemon> pokemon = new ArrayList<>();
     private RequestQueue requestQueue;
+    private List<Pokemon> filtered = new ArrayList<>();
 
     PokedexAdapter(Context context){
         requestQueue = Volley.newRequestQueue(context);
@@ -88,6 +92,31 @@ public class PokedexAdapter extends RecyclerView.Adapter<PokedexAdapter.PokedexV
         requestQueue.add(request);
     }
 
+    @Override
+    public Filter getFilter() {
+        return new PokemonFilter();
+    }
+
+    private class PokemonFilter extends Filter {
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            FilterResults results = new FilterResults();
+            List<Pokemon> filteredPokemon = new ArrayList<>();
+            for(int i = 0; i < pokemon.size(); i++)
+                if(pokemon.get(i).getName().toLowerCase().contains(constraint.toString().toLowerCase()))
+                    filteredPokemon.add(pokemon.get(i));
+            results.values = filteredPokemon;
+            results.count = filteredPokemon.size();
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            filtered = (List<Pokemon>) results.values;
+            notifyDataSetChanged();
+        }
+    }
+
     @NonNull
     @Override
     public PokedexViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -98,13 +127,13 @@ public class PokedexAdapter extends RecyclerView.Adapter<PokedexAdapter.PokedexV
 
     @Override
     public void onBindViewHolder(@NonNull PokedexViewHolder holder, int position) {
-        Pokemon current = pokemon.get(position);
+        Pokemon current = filtered.get(position);
         holder.textView.setText(current.getName());
         holder.containerView.setTag(current);
     }
 
     @Override
     public int getItemCount() {
-        return pokemon.size();
+        return filtered.size();
     }
 }
